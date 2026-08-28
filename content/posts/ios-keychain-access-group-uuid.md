@@ -9,7 +9,17 @@ draft = false
 
 빌드 파이프라인을 교체한 뒤 UUID가 바뀐다는 얘기가 나왔다. 코드는 그대로였다. 바뀐 건 keychain access group 형식이었다.
 
-기존에는 `(teamid).*` 형태를 쓰고 있었는데, 파이프라인 교체 과정에서 `teamid.bundleid` 로 바뀌었다. 그리고 그 순간부터 이전에 저장해둔 UUID를 못 읽어서 새 값이 발급되고 있었다.
+기존에는 `(teamid).*` 형태를 쓰고 있었는데 `teamid.bundleid` 로 바뀌었고, 그 순간부터 이전에 저장해둔 UUID를 못 읽어서 새 값이 발급되고 있었다.
+
+### 내 소스에는 그 설정이 없었다
+
+이상한 건 access group을 바꾼 기억이 없다는 것이었다. 그럴 만도 했다. **프로젝트의 Unity 빌드 포스트프로세스에는 `keychain-access-groups` 를 정의하는 코드가 아예 없었다.**
+
+실제로 그 값을 넣고 있던 건 빌드머신이었다. CI 단계에서 entitlements를 임의로 만들어 주입했고, 그 안에서 와일드카드로 서명하고 있었다. 내 쪽 소스만 봐서는 알 수 없는 영역이었다. 나에게는 블랙박스였다.
+
+그러다 iOS Universal Link를 붙이게 됐다. Associated Domains는 **코드사이닝된 entitlements에 들어가 있어야** 동작한다. entitlements를 CI에 맡겨둔 채로는 넘어갈 수가 없었고, 직접 구성해야 했다. 그러면서 앱 전용으로 잡았다.
+
+그게 전부였다. 나는 없던 설정을 새로 정의했다고 생각했는데, 실제로는 **CI가 뒤에서 넣어주던 와일드카드 그룹을 앱 전용 그룹으로 갈아끼운 것**이었다. 저장 위치가 옮겨갔고, 이전 위치의 값은 지워지지도 않은 채 그냥 조회 대상에서 빠졌다.
 
 ## 왜 그룹이 바뀌면 값을 잃는가
 
@@ -18,20 +28,26 @@ keychain 아이템은 access group 단위로 격리된다. 그래서 access grou
 여기서 중요한 건 **access group을 명시하지 않아도 그룹이 없는 게 아니라는 점**이다. entitlements에 keychain access group을 설정하지 않으면 기본 저장소가 `teamid.bundleid` 가 된다. 즉 설정을 지우는 것도 그룹을 바꾸는 행위다.
 
 ```xml
-<!-- 기존: 같은 team prefix를 쓰는 앱들이 공유 -->
+<!-- 전: CI가 빌드 단계에서 만들어 주입하던 entitlements.
+     프로젝트 소스에는 이 내용이 없었다. -->
 <key>keychain-access-groups</key>
 <array>
   <string>$(AppIdentifierPrefix)*</string>
 </array>
 
-<!-- 교체 후: 앱 전용 -->
+<!-- 후: Universal Link를 붙이려고 직접 구성한 entitlements.
+     associated-domains를 넣으면서 keychain 쪽도 앱 전용으로 잡혔다. -->
+<key>com.apple.developer.associated-domains</key>
+<array>
+  <string>applinks:내-도메인</string>
+</array>
 <key>keychain-access-groups</key>
 <array>
   <string>$(AppIdentifierPrefix)$(CFBundleIdentifier)</string>
 </array>
 ```
 
-`.*` 와일드카드 그룹을 쓰고 있었다는 건, 같은 team prefix를 가진 여러 프로젝트가 **같은 UUID를 공유하고 있었다**는 뜻이기도 했다. 이게 의도한 동작이었는지부터 확인해야 했다.
+`.*` 와일드카드 그룹을 쓰고 있었다는 건, 같은 team prefix를 가진 여러 프로젝트가 **같은 UUID를 공유하고 있었다**는 뜻이기도 했다. 그것도 아무도 명시적으로 정한 적 없이 그렇게 되어 있었다. 이게 의도한 동작이었는지부터 확인해야 했다.
 
 ## 확인해야 했던 것들
 
@@ -60,7 +76,7 @@ keychain 아이템은 access group 단위로 격리된다. 그래서 access grou
 
 원인을 파다 보니 주변이 같이 지저분했다.
 
-**entitlements가 잘못 생성되던 문제.** `XcodeOption.cs` 를 제거하고 iOS post build 구조를 개편했다. entitlements를 여러 군데서 건드리면 어느 쪽이 최종적으로 반영됐는지 알기 어려워지고, access group처럼 값 하나가 데이터 유실로 직결되는 설정에서는 이게 그대로 사고가 된다.
+**entitlements가 잘못 생성되던 문제.** `XcodeOption.cs` 를 제거하고 iOS post build 구조를 개편했다. 이번 사고가 정확히 그 형태였다. CI와 프로젝트 양쪽이 같은 파일을 만들고 있었고, 어느 쪽이 최종적으로 반영됐는지는 산출물을 까봐야 알 수 있었다. access group처럼 값 하나가 데이터 유실로 직결되는 설정에서는 그게 그대로 사고가 된다. 생성 주체를 한 곳으로 모으는 게 기능 추가보다 먼저였다.
 
 **Team ID / AppIdentifierPrefix / bundle identifier 처리.** 이 세 값을 조합해 access group 문자열을 만드는데, 처리 로직이 어긋나면 존재하지 않는 그룹을 조회하게 된다. 보정해서 식별 안정성을 올렸다.
 
@@ -102,11 +118,14 @@ keychain 아이템은 access group 단위로 격리된다. 그래서 access grou
 
 돌아보면 사고의 원인은 UUID 생성 로직이 아니라 **저장 위치를 결정하는 설정**이었다. 코드 한 줄 안 바뀌었는데 데이터가 사라진 이유가 거기 있었다.
 
+그리고 그 설정은 내 소스에 없었다. 없다는 건 안 쓴다는 뜻이 아니라, **누군가 대신 넣어주고 있다**는 뜻일 수 있다. 그 상태에서 그 값을 처음 명시하는 순간이 곧 변경 시점이 된다. 새로 정의하는 것처럼 보이지만 실제로는 덮어쓰는 것이다.
+
 다시 겪는다면 이 순서로 볼 것 같다.
 
 | 확인 | 이유 |
 |---|---|
 | entitlements의 access group 값이 빌드 산출물에서 실제로 무엇인지 | 소스와 최종 산출물이 다를 수 있다 |
+| 내 소스에 없는 설정을 빌드 산출물이 갖고 있는지 | 없다는 게 안 쓴다는 뜻은 아니다 |
 | access group을 누가 생성/수정하는지 한 곳으로 모였는지 | 여러 곳에서 건드리면 추적이 안 된다 |
 | 옛 그룹과 새 그룹을 동시에 등록해 읽을 수 있는지 | 마이그레이션 가능 여부가 여기서 갈린다 |
 | 저장 실패가 호출한 쪽에 전달되는지 | 조용히 실패하면 원인 추적이 불가능하다 |
@@ -119,3 +138,5 @@ keychain 아이템은 access group 단위로 격리된다. 그래서 access grou
 - [Unity — Plugins for iOS](https://docs.unity3d.com/2020.1/Documentation/Manual/PluginsForIOS.html)
 - [Unity — SystemInfo.deviceUniqueIdentifier](https://docs.unity3d.com/6000.3/Documentation/ScriptReference/SystemInfo-deviceUniqueIdentifier.html)
 - [Apple — UIDevice.identifierForVendor](https://developer.apple.com/documentation/uikit/uidevice/identifierforvendor)
+
+이 사고의 계기가 된 Universal Link 적용 자체도 따로 앓았다. 그 얘기는 [Unity 딥링크 트러블슈팅]({{< ref "unity-deeplink-universal-link-troubleshooting" >}})에 적었다.
