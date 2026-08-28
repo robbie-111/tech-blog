@@ -1,0 +1,54 @@
+baseURL = "https://robbie-111.github.io/tech-blog/"
+title = "tech-blog"
+theme = "PaperMod"
+
+locale = "ko-KR"
+defaultContentLanguage = "ko"
+
+enableRobotsTXT = true
+enableEmoji = true
+buildDrafts = false
+buildFuture = false
+
+[pagination]
+  pagerSize = 10
+
+[minify]
+  disableXML = true
+
+[markup.highlight]
+  noClasses = false
+  codeFences = true
+  guessSyntax = true
+  lineNos = false
+  style = "monokai"
+
+[params]
+  env = "production"
+  description = "Go, 백엔드, 인프라에 대한 기록"
+  DateFormat = "2006-01-02"
+  defaultTheme = "auto"
+  ShowReadingTime = true
+  ShowCodeCopyButtons = true
+  ShowPostNavLinks = true
+  ShowBreadCrumbs = true
+  ShowShareButtons = false
+  ShowWordCount = true
+  ShowToc = true
+  TocOpen = false
+
+  [params.homeInfoParams]
+    Title = "tech-blog"
+    Content = "Go와 백엔드 엔지니어링에 대해 배운 것들을 정리합니다."
+
+[[menu.main]]
+  identifier = "posts"
+  name = "Posts"
+  url = "/posts/"
+  weight = 10
+
+[[menu.main]]
+  identifier = "tags"
+  name = "Tags"
+  url = "/tags/"
+  weight = 20
