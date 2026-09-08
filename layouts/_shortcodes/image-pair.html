@@ -1,0 +1,17 @@
+<div class="image-pair">
+  {{- range slice "left" "right" }}
+    {{- $src := $.Get (printf "%sSrc" .) }}
+    {{- $alt := $.Get (printf "%sAlt" .) }}
+    {{- $caption := $.Get (printf "%sCaption" .) }}
+    {{- with $.Page.Resources.Get $src }}
+      <figure class="image-pair__item">
+        <a class="image-pair__link" href="{{ .RelPermalink }}" aria-label="{{ $alt }} — 원본 보기">
+          <img src="{{ .RelPermalink }}" alt="{{ $alt }}" width="{{ .Width }}" height="{{ .Height }}" loading="lazy">
+        </a>
+        <figcaption>{{ $caption }}</figcaption>
+      </figure>
+    {{- else }}
+      {{- errorf "image-pair: 이미지 %q를 찾을 수 없습니다 (%s)" $src $.Position }}
+    {{- end }}
+  {{- end }}
+</div>

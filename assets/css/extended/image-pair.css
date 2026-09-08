@@ -1,0 +1,40 @@
+.md-content .image-pair {
+    display: grid;
+    grid-template-columns: minmax(0, 62fr) minmax(0, 38fr);
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.md-content .image-pair__item {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    min-width: 0;
+    margin: 0;
+}
+
+.md-content .image-pair__link {
+    display: block;
+    box-shadow: none;
+}
+
+.md-content .image-pair img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0;
+}
+
+.md-content .image-pair figcaption {
+    margin-top: 8px;
+    padding: 0;
+    color: var(--secondary);
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+@media (max-width: 640px) {
+    .md-content .image-pair {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
