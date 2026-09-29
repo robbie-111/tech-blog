@@ -1,0 +1,4 @@
+<blockquote class="alert alert-{{ .AlertType }}">
+    <p class="alert-heading">{{ with .AlertTitle }}{{ . }}{{ else }}{{ upper .AlertType }}{{ end }}</p>
+    {{ .Text }}
+</blockquote>

@@ -1,0 +1,59 @@
+.md-content .alert {
+    --alert-color: #0969da;
+    --alert-background: #f0f6ff;
+    margin: 24px 0;
+    padding: 16px 20px;
+    border: 0;
+    border-inline-start: 4px solid var(--alert-color);
+    border-radius: 6px;
+    background: var(--alert-background);
+    color: var(--primary);
+    overflow-wrap: anywhere;
+}
+
+.md-content .alert-tip {
+    --alert-color: #1a7f37;
+    --alert-background: #effaf2;
+}
+
+.md-content .alert-important {
+    --alert-color: #8250df;
+    --alert-background: #f7f2ff;
+}
+
+.md-content .alert-warning {
+    --alert-color: #9a4b00;
+    --alert-background: #fff6e8;
+}
+
+[data-theme="dark"] .md-content .alert {
+    --alert-color: #79b8ff;
+    --alert-background: #19293c;
+}
+
+[data-theme="dark"] .md-content .alert-tip {
+    --alert-color: #7ee09a;
+    --alert-background: #192f23;
+}
+
+[data-theme="dark"] .md-content .alert-important {
+    --alert-color: #c4a2ff;
+    --alert-background: #2c2340;
+}
+
+[data-theme="dark"] .md-content .alert-warning {
+    --alert-color: #ffbd75;
+    --alert-background: #382a1c;
+}
+
+.md-content .alert .alert-heading {
+    margin: 0 0 8px;
+    color: var(--alert-color);
+    font-size: 0.9em;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+.md-content .alert > :last-child {
+    margin-bottom: 0;
+}
